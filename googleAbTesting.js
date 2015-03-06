@@ -1,5 +1,5 @@
-'use strict';
 (function() {
+	'use strict';
 	angular.module('googleAbTesting', [])
 	.constant('GOOGLE_EXPERIMENTS', {
 		baseUrl: '//www.google-analytics.com/cx/api.js?experiment=',
@@ -33,7 +33,9 @@
 
 		var deferred;
 		var _getVariation = function($q, $interval) {
-			deferred = $q.defer();
+			if (!deferred) {
+				deferred = $q.defer();
+			}
 
 			if (!this.getExperimentId()) {
 				deferred.reject('Google Experiment ID not set');
@@ -72,18 +74,22 @@
 			restrict: 'A',
 			link: function(scope, element, attrs) {
 				element.addClass('ng-cloak');
-
-				scope.$watch(attrs.variation, function(value) {
-					googleAbTesting.getVariation().then(function(variation) {
-						if (variation == value) {
+				function toggleElement(visible) {
+						if (visible) {
 							element.removeClass('ng-cloak');
 							element.removeClass('ng-hide');
 						} else {
 							element.addClass('ng-hide');
 						}
+				}
+
+				scope.$watch(attrs.variation, function(value) {
+					googleAbTesting.getVariation().then(function(variation) {
+						toggleElement(variation == parseInt(value));
 						return variation;
 					}).catch(function(err) {
-						$log.warn(err);
+						// Default to variation 0 if no experiment found
+						toggleElement(parseInt(value) === 0);
 					});
 				});
 			}
